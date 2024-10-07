@@ -5,19 +5,58 @@ namespace Game;
 
 public partial class Main : Node2D
 {
-	private Sprite2D sprite;
+	private Sprite2D cursor;
+	private PackedScene buildingScene;
+	private Button placeBuildingButton;
+
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
 	{
-		sprite = GetNode<Sprite2D>("Cursor");
+		cursor = GetNode<Sprite2D>("Cursor");
+		buildingScene = GD.Load<PackedScene>("res://scenes/building/Building.tscn");
+		placeBuildingButton = GetNode<Button>("PlaceBuildingButton");
+
+		cursor.Visible = false;
+
+		placeBuildingButton.Pressed += OnButtonPressed;
+		// placeBuildingButton.Connect(Button.SignalName.Pressed, Callable.From(OnButtonPressed)); << alternative way above
+	}
+
+	public override void _UnhandledInput(InputEvent evt)
+	{
+		if (cursor.Visible && evt.IsActionPressed("left_click"))
+		{
+			PlaceBuildingAtMousePosition();
+			cursor.Visible = false;
+		}
 	}
 
 	// Called every frame. 'delta' is the elapsed time since the previous frame.
 	public override void _Process(double delta)
 	{
+		var gridPosition = GetMouseGridCellPosition();
+		cursor.GlobalPosition = gridPosition * 64;
+	}
+
+	private Vector2 GetMouseGridCellPosition()
+	{
 		var mousePosition = GetGlobalMousePosition();
 		var gridPosition = mousePosition / 64;
 		gridPosition = gridPosition.Floor();
-		sprite.GlobalPosition = gridPosition * 64;
+		return gridPosition;
+	}
+
+	private void PlaceBuildingAtMousePosition()
+	{
+		var building = buildingScene.Instantiate<Node2D>();
+		AddChild(building);
+
+		var gridPosition = GetMouseGridCellPosition() * 64;
+		building.GlobalPosition = gridPosition;
+	}
+
+	private void OnButtonPressed()
+	{
+		cursor.Visible = true;
 	}
 }
